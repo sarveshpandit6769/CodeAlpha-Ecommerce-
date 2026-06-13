@@ -27,3 +27,8 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local   
+.env # Ignore all .env files, but keep .env.example
+backend/.env
+.env
+node_modules
+backend/node_modules
