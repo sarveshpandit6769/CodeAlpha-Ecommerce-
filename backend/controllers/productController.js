@@ -1,4 +1,5 @@
 const Product = require("../models/Product");
+const mongoose = require("mongoose");
 
 // Get all products
 exports.getAllProducts = async (req, res) => {
@@ -61,13 +62,60 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, category, stock, image } = req.body;
 
-    const product = await Product.findByIdAndUpdate(
-      id,
-      { name, description, price, category, stock, image },
-      { new: true }
-    );
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid product id" });
+    }
+
+    const { name, description, price, category, stock, image } = req.body;
+    const updateData = {};
+
+    if (name !== undefined) {
+      if (typeof name !== "string") {
+        return res.status(400).json({ message: "Invalid name" });
+      }
+      updateData.name = name;
+    }
+
+    if (description !== undefined) {
+      if (typeof description !== "string") {
+        return res.status(400).json({ message: "Invalid description" });
+      }
+      updateData.description = description;
+    }
+
+    if (price !== undefined) {
+      if (typeof price !== "number" || Number.isNaN(price)) {
+        return res.status(400).json({ message: "Invalid price" });
+      }
+      updateData.price = price;
+    }
+
+    if (category !== undefined) {
+      if (typeof category !== "string") {
+        return res.status(400).json({ message: "Invalid category" });
+      }
+      updateData.category = category;
+    }
+
+    if (stock !== undefined) {
+      if (typeof stock !== "number" || Number.isNaN(stock)) {
+        return res.status(400).json({ message: "Invalid stock" });
+      }
+      updateData.stock = stock;
+    }
+
+    if (image !== undefined) {
+      if (typeof image !== "string") {
+        return res.status(400).json({ message: "Invalid image" });
+      }
+      updateData.image = image;
+    }
+
+    const product = await Product.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
