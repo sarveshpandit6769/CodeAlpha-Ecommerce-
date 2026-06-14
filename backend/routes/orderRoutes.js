@@ -1,21 +1,65 @@
 const express = require("express");
-const {
-  createOrder,
-  getUserOrders,
-  getOrder,
-  updateOrderStatus,
-  cancelOrder,
-} = require("../controllers/orderController");
-const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 
-// Protected routes (user must be logged in)
-router.post("/", authMiddleware, createOrder);
-router.get("/user/orders", authMiddleware, getUserOrders);
-router.get("/:id", authMiddleware, getOrder);
-router.put("/:id/cancel", authMiddleware, cancelOrder);
+const { orderLimiter } = require("../middleware/rateLimitMiddleware");
+const orderController = require("../controllers/orderController");
 
-// Admin only routes
-router.put("/:id/status", authMiddleware, updateOrderStatus);
+const getHandler = (...names) => {
+  for (const name of names) {
+    if (typeof orderController[name] === "function") {
+      return orderController[name];
+    }
+  }
+
+  return (req, res) => {
+    res.status(500).json({
+      success: false,
+      message: `Order controller function missing. Checked: ${names.join(", ")}`,
+      availableFunctions: Object.keys(orderController),
+    });
+  };
+};
+
+const createOrder = getHandler(
+  "createOrder",
+  "addOrder",
+  "placeOrder"
+);
+
+const getMyOrders = getHandler(
+  "getMyOrders",
+  "getUserOrders",
+  "myOrders"
+);
+
+const getOrderById = getHandler(
+  "getOrderById",
+  "getSingleOrder",
+  "getOrder"
+);
+
+const getAllOrders = getHandler(
+  "getAllOrders",
+  "getOrders",
+  "getAllOrder"
+);
+
+const updateOrderStatus = getHandler(
+  "updateOrderStatus",
+  "updateOrder",
+  "changeOrderStatus"
+);
+
+const deleteOrder = getHandler(
+  "deleteOrder",
+  "removeOrder"
+);
+
+router.post("/", orderLimiter, createOrder);
+router.get("/my-orders", orderLimiter, getMyOrders);
+router.get("/", orderLimiter, getAllOrders);
+router.get("/:id", orderLimiter, getOrderById);
+router.put("/:id/status", orderLimiter, updateOrderStatus);
+router.delete("/:id", orderLimiter, deleteOrder);
 
 module.exports = router;
