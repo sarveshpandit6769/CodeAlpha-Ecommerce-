@@ -68,9 +68,20 @@ exports.updateOrderStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
+    if (typeof status !== "string") {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const allowedStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const safeStatus = status;
+
     const order = await Order.findByIdAndUpdate(
       id,
-      { status },
+      { status: safeStatus },
       { new: true }
     );
 
